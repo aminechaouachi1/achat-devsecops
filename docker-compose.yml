@@ -1,0 +1,42 @@
+# Deploiement durci de l application - variables injectees par Jenkins :
+#   IMAGE, TAG, MYSQL_ROOT_PASSWORD (credential Jenkins, jamais en clair dans Git)
+services:
+  mysqldb:
+    image: mysql:8.0
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: achatdb
+    volumes:
+      - db_data:/var/lib/mysql
+    networks: [backend]                       # aucun port expose a l exterieur
+    security_opt: ["no-new-privileges:true"]
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      retries: 10
+
+  app:
+    image: ${IMAGE}:${TAG}
+    restart: unless-stopped
+    depends_on:
+      mysqldb:
+        condition: service_healthy
+    ports:
+      - "8089:8089"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysqldb:3306/achatdb?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+    read_only: true                           # systeme de fichiers en lecture seule
+    tmpfs: [/tmp]
+    cap_drop: [ALL]                           # aucune capability Linux
+    security_opt: ["no-new-privileges:true"]
+    mem_limit: 512m
+    networks: [backend]
+
+networks:
+  backend: {}
+
+volumes:
+  db_data: {}

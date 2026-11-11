@@ -1,0 +1,14 @@
+# VM Ubuntu 22.04 vierge pour le pipeline DevSecOps (optionnel : toute VM Ubuntu convient)
+# Usage depuis ce dossier : vagrant up  puis  vagrant ssh
+# Ensuite dans la VM :      sudo bash ~/infra/setup-devsecops.sh
+Vagrant.configure("2") do |config|
+  config.vm.box = "ubuntu/jammy64"
+  config.vm.hostname = "devsecops"
+  config.vm.network "private_network", ip: "192.168.33.10"
+  config.vm.synced_folder ".", "/home/vagrant/infra"
+  config.vm.provider "virtualbox" do |vb|
+    vb.name   = "devsecops"
+    vb.memory = "8192"   # 6144 si votre PC n a que 8 Go
+    vb.cpus   = 4
+  end
+end
